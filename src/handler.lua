@@ -1,4 +1,4 @@
-local private_key_file     = '/etc/kong/private.pem' -- hard coded to be loaded at init_work phase
+local private_keys_file     = '/etc/kong/private_keys.json' -- hard coded to be loaded at init_work phase
 
 local BasePlugin = require "kong.plugins.base_plugin"
 
@@ -13,20 +13,36 @@ local pl                   = require('pl.pretty')
 local ngx_log              = ngx.log
 local ngx_ERR              = ngx.ERR
 local encode_base64        = ngx.encode_base64
-
+local ngx_b64              = require("ngx.base64")
 
 local read_file            = require("pl.file").read
 
-local function load_private_key(private_key_file)
-    local content, err = read_file(private_key_file)
-    if content == nil or err then
-        ngx_log(ngx_ERR,   ">>>>>>>>>>> BE CAREFUL: PRIVATE KEYS NOT LOADED CORRECTLY. THIS MAY CAUSE SOME UNEXPECTED 500 RETURNS. <<<<<<<<<<<")
-        return nil, tostring(err)
-    end
-    return content
+local function load_private_keys(private_keys_file)
+  local content, err = read_file(private_keys_file)
+  if content == nil or err then
+      ngx_log(ngx_ERR, "Could not read file contents. ", err)
+      return nil, tostring(err)
+  end
+
+  local pkeys = json.decode(content)
+  if not pkeys then
+    ngx_log(ngx_ERR, "Could not get 'keys' object from " .. private_keys_file )
+    return nil, "Could not get 'keys' object from " .. private_keys_file
+  end
+
+  local private_keys={}
+  for k,v in pairs(pkeys) do
+    private_keys[k]=ngx_b64.decode_base64url(v)
+  end
+
+  return private_keys
+end
+  
+local private_keys, err_pk = load_private_keys(private_keys_file)
+if err_pk then
+  ngx_log(ngx_ERR,   ">>>>>>>>>>> BE CAREFUL: PRIVATE KEYS NOT LOADED CORRECTLY. THIS MAY CAUSE SOME UNEXPECTED 500 RETURNS. <<<<<<<<<<<")
 end
 
-local key = load_private_key(private_key_file)
 
 local plugin = BasePlugin:extend()
 
@@ -49,15 +65,22 @@ function plugin:access(conf)
     local http_only_cookies    = conf['http_only_cookies']
     local issuer               = conf['issuer'] or plugin_name
     local cb_uri               = conf['callback_uri'] or "/_oauth"
+    local private_key_id       = conf['private_key_id']
+    local key                  = private_keys[private_key_id]
     local cb_server_name       = ngx.req.get_headers()["Host"]
     local cb_scheme            = ngx.var.callback_scheme or scheme
     local cb_url               = cb_scheme .. "://" .. cb_server_name .. cb_uri
     local redirect_url         = cb_scheme .. "://" .. cb_server_name .. ngx.var.request_uri
     local initial_redirect_url = cb_url .. "?uri=" .. uri
 
-    local function sign(claims, key)
+    local function sign(claims, key, private_key_id)
+        local headers={}
+        headers['alg']='RS512'
+        headers['typ']='JWT'
+        headers['kid']=private_key_id
+        h=encode_base64(json.encode(headers)):gsub("==$", ""):gsub("=$", "")
         local c = encode_base64(json.encode(claims)):gsub("==$", ""):gsub("=$", "")
-        local data = 'eyJhbGciOiJSUzUxMiIsInR5cCI6IkpXVCJ9.' .. c
+        local data = h .. '.' .. c
         return data .. "." .. encode_base64(openssl_pkey.new(key):sign(openssl_digest.new("sha512"):update(data))):gsub("+", "-"):gsub("/", "_"):gsub("==$", ""):gsub("=$", "")
     end
 
@@ -153,7 +176,7 @@ function plugin:access(conf)
             claims["verified_email"] = profile["verified_email"]
             claims["picture"] = profile["picture"]
 
-            local jwt = sign(claims,key)
+            local jwt = sign(claims,key,private_key_id)
 
             local expires      = ngx.time() + jwt_validity
             local cookie_tail  = ";version=1;path=/;Max-Age=" .. expires
