@@ -61,6 +61,7 @@ function plugin:access(conf)
     local client_id            = conf['client_id']
     local client_secret        = conf['client_secret']
     local jwt_validity         = conf['jwt_validity']
+    local cookie_name          = conf['cookie_name']
     local secure_cookies       = conf['secure_cookies']
     local http_only_cookies    = conf['http_only_cookies']
     local issuer               = conf['issuer'] or plugin_name
@@ -188,7 +189,7 @@ function plugin:access(conf)
             end
 
             ngx.header["Set-Cookie"] = {
-                "jwt=" .. jwt .. cookie_tail
+              cookie_name .. "=" .. jwt .. cookie_tail
             }
            
             local m, err = ngx.re.match(uri_args["state"], "uri=(?<uri>.+)")
