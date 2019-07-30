@@ -68,9 +68,9 @@ function plugin:access(conf)
     local cb_uri               = conf['callback_uri'] or "/_oauth"
     local private_key_id       = conf['private_key_id']
     local ssl_verify           = conf['ssl_verify']
+    local cb_scheme            = conf['callback_scheme'] or scheme
     local key                  = private_keys[private_key_id]
     local cb_server_name       = ngx.req.get_headers()["Host"]
-    local cb_scheme            = ngx.var.callback_scheme or scheme
     local cb_url               = cb_scheme .. "://" .. cb_server_name .. cb_uri
     local redirect_url         = cb_scheme .. "://" .. cb_server_name .. ngx.var.request_uri
     local initial_redirect_url = cb_url .. "?uri=" .. uri
