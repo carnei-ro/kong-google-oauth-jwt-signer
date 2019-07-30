@@ -87,7 +87,7 @@ req-aux:
 config:
 	@curl -s -X POST http://localhost:8001/services/ -d 'name=oauth' -d url=http://localhost
 	@curl -s -X POST http://localhost:8001/services/oauth/routes -d 'paths[]=/_oauth' 
-	@curl -i -X POST http://localhost:8001/services/oauth/plugins -F "name=${NAME}" -F "config.client_secret=$$(grep client_secret cred | awk '{print $$NF}')" -F "config.client_id=$$(grep client_id cred | awk '{print $$NF}')"
+	@curl -i -X POST http://localhost:8001/services/oauth/plugins -F "name=${NAME}" -F "config.client_secret=$$(grep client_secret cred | awk '{print $$NF}')" -F "config.client_id=$$(grep client_id cred | awk '{print $$NF}')" -F "config.secure_cookies=false" -F "config.secure_cookies=http_only_cookies"
 
 config-jwt-remove:
 	@curl -i -X DELETE http://localhost:8001/plugins/$$(curl -s http://localhost:8001/plugins/ | jq -r ".data[] |  select (.name|test(\"${NAME}\")) .id")

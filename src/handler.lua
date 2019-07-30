@@ -67,6 +67,7 @@ function plugin:access(conf)
     local issuer               = conf['issuer'] or plugin_name
     local cb_uri               = conf['callback_uri'] or "/_oauth"
     local private_key_id       = conf['private_key_id']
+    local ssl_verify           = conf['ssl_verify']
     local key                  = private_keys[private_key_id]
     local cb_server_name       = ngx.req.get_headers()["Host"]
     local cb_scheme            = ngx.var.callback_scheme or scheme
@@ -113,7 +114,7 @@ function plugin:access(conf)
             headers = {
             ["Content-type"] = "application/x-www-form-urlencoded"
             },
-            ssl_verify = false,
+            ssl_verify = ssl_verify,
         })
         if not res then
             return nil, (err or "auth token request failed: " .. (err or "unknown reason"))
@@ -135,7 +136,7 @@ function plugin:access(conf)
             headers = {
             ["Authorization"] = "Bearer " .. token,
             },
-            ssl_verify = false,
+            ssl_verify = ssl_verify,
         })
         if not res then
             return nil, "auth info request failed: " .. (err or "unknown reason")
