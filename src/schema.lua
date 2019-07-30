@@ -7,7 +7,7 @@ return {
         secure_cookies = { type = "boolean", default = true, required = true },
         http_only_cookies = { type = "boolean", default = true, required = true },
         issuer = { type = "string", default = 'Kong', required = false },
-        cb_uri = { type = "string", default = "/_oauth", required = false },
+        callback_uri = { type = "string", default = "/_oauth", required = false },
         private_key_id = { type = "string", default = "00000000-0000-0000-0000-000000000000", required = true },
         ssl_verify = {type = "boolean", default=true, required=true}
     }
