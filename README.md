@@ -37,8 +37,7 @@ plugins:
 Configure the signer route:  
 ```yaml
 - hosts:
-  - torrents.carnei.ro
-  - files.carnei.ro
+  - example.carnei.ro
   methods: []
   name: auth-google-callback
   paths:
