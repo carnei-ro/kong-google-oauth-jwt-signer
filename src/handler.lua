@@ -177,6 +177,7 @@ function plugin:access(conf)
             claims["domain"] = profile["email"]:match("[^@]+@(.+)")
             claims["verified_email"] = profile["verified_email"]
             claims["picture"] = profile["picture"]
+            claims["provider"] = "google"
 
             local jwt = sign(claims,key,private_key_id)
 
