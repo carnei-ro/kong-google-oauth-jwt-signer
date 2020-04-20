@@ -1,5 +1,3 @@
-local private_keys_file     = '/etc/kong/jwt_signer_private_keys.json' -- hard coded to be loaded at init_work phase
-
 local BasePlugin = require "kong.plugins.base_plugin"
 
 local plugin_name = ({...})[1]:match("^kong%.plugins%.([^%.]+)")
@@ -16,18 +14,19 @@ local encode_base64        = ngx.encode_base64
 local ngx_b64              = require("ngx.base64")
 
 local read_file            = require("pl.file").read
+local os_getenv            = os.getenv
 
-local function load_private_keys(private_keys_file)
-  local content, err = read_file(private_keys_file)
+local function load_private_keys()
+  local content = os_getenv("KONG_GOOGLE_OAUTH_JWT_SIGNER_PRIVATE_KEYS")
   if content == nil or err then
-      ngx_log(ngx_ERR, "Could not read file contents. ", err)
+      ngx_log(ngx_ERR, "Could not read KONG_GOOGLE_OAUTH_JWT_SIGNER_PRIVATE_KEYS env var.")
       return nil, tostring(err)
   end
 
   local pkeys = json.decode(content)
   if not pkeys then
-    ngx_log(ngx_ERR, "Could not get 'keys' object from " .. private_keys_file )
-    return nil, "Could not get 'keys' object from " .. private_keys_file
+    ngx_log(ngx_ERR, "Could not get 'keys' object from KONG_GOOGLE_OAUTH_JWT_SIGNER_PRIVATE_KEYS env var" )
+    return nil, "Could not get 'keys' object from KONG_GOOGLE_OAUTH_JWT_SIGNER_PRIVATE_KEYS env var"
   end
 
   local private_keys={}
@@ -37,12 +36,11 @@ local function load_private_keys(private_keys_file)
 
   return private_keys
 end
-  
-local private_keys, err_pk = load_private_keys(private_keys_file)
+
+local private_keys, err_pk = load_private_keys()
 if err_pk then
   ngx_log(ngx_ERR,   ">>>>>>>>>>> BE CAREFUL: PRIVATE KEYS NOT LOADED CORRECTLY. THIS MAY CAUSE SOME UNEXPECTED 500 RETURNS. <<<<<<<<<<<")
 end
-
 
 local plugin = BasePlugin:extend()
 
@@ -212,6 +210,6 @@ function plugin:access(conf)
 end
 
 plugin.PRIORITY = 1000
-plugin.VERSION = "0.0-2"
+plugin.VERSION = "0.0-3"
 
 return plugin

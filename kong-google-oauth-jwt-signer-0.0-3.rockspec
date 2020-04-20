@@ -1,5 +1,5 @@
 package = "kong-google-oauth-jwt-signer"
-version = "0.0-2"
+version = "0.0-3"
 
 source = {
  url    = "git@bitbucket.org:leandro-carneiro/kong-google-oauth-jwt-signer.git",
