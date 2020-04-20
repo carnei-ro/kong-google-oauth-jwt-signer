@@ -78,7 +78,7 @@ function plugin:access(conf)
         headers['alg']='RS512'
         headers['typ']='JWT'
         headers['kid']=private_key_id
-        h=encode_base64(json.encode(headers)):gsub("==$", ""):gsub("=$", "")
+        local h=encode_base64(json.encode(headers)):gsub("==$", ""):gsub("=$", "")
         local c = encode_base64(json.encode(claims)):gsub("==$", ""):gsub("=$", "")
         local data = h .. '.' .. c
         return data .. "." .. encode_base64(openssl_pkey.new(key):sign(openssl_digest.new("sha512"):update(data))):gsub("+", "-"):gsub("/", "_"):gsub("==$", ""):gsub("=$", "")
