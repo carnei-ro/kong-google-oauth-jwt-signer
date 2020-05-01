@@ -10,13 +10,11 @@ return {
           fields = {
             { client_id = {
                 type = "string",
-                default = "012345678910-1a23b4c5dfg6hij78k9101lmn12opq3r.apps.googleusercontent.com",
-                required = true
+                required = false
             } },
             { client_secret = {
                 type = "string",
-                default = "ABC-dEfghijkLmnOPqr_rst-",
-                required = true
+                required = false
             } },
             { jwt_validity = {
                 type = "number",
@@ -61,7 +59,16 @@ return {
                 type = "boolean",
                 default = true,
                 required = true
-            } }
+            } },
+            { private_keys = {
+                type = "map",
+                keys = { type = "string" },
+                required = false,
+                values = {
+                    type = "string",
+                    required = true,
+                }
+            } },
         },
     },
   },
