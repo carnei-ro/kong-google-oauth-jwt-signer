@@ -5,8 +5,8 @@ local plugin_name = ({...})[1]:match("^kong%.plugins%.([^%.]+)")
 local json                 = require("cjson")
 local http                 = require("resty.http")
 
-local openssl_digest       = require "openssl.digest"
-local openssl_pkey         = require "openssl.pkey"
+local openssl_digest       = require "resty.openssl.digest"
+local openssl_pkey         = require "resty.openssl.pkey"
 local pl                   = require('pl.pretty')
 local ngx_log              = ngx.log
 local ngx_ERR              = ngx.ERR
@@ -118,7 +118,15 @@ function plugin:access(conf)
         local h=encode_base64(json.encode(headers)):gsub("==$", ""):gsub("=$", "")
         local c = encode_base64(json.encode(claims)):gsub("==$", ""):gsub("=$", "")
         local data = h .. '.' .. c
-        return data .. "." .. encode_base64(openssl_pkey.new(key):sign(openssl_digest.new("sha512"):update(data))):gsub("+", "-"):gsub("/", "_"):gsub("==$", ""):gsub("=$", "")
+
+        local pkey = openssl_pkey.new(key)
+        local digest = openssl_digest.new("sha512")
+        digest:update(data)
+        local signature, err = pkey:sign(digest)
+        if err then
+          return nil, err
+        end
+        return(data .. ".".. encode_base64(signature):gsub("+", "-"):gsub("/", "_"):gsub("==$", ""):gsub("=$", ""))
     end
 
     local function redirect_to_auth()
@@ -251,6 +259,6 @@ function plugin:access(conf)
 end
 
 plugin.PRIORITY = 1000
-plugin.VERSION = "0.0-6"
+plugin.VERSION = "0.0-7"
 
 return plugin
