@@ -36,6 +36,8 @@ plugins:
     callback_scheme: null
     private_key_id: 12345678-1234-1234-1234-123456789ABC
     ssl_verify: true
+    unescape_uri: false
+    strip_port_from_host: false
 ```
 
 ## Real example

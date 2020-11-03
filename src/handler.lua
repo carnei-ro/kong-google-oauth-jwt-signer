@@ -57,6 +57,9 @@ function plugin:access(conf)
     local uri_args             = ngx.req.get_uri_args()
     
     local uri                  = uri_args['uri'] or ""
+    if conf['unescape_uri'] then
+      uri = ngx.unescape_uri(uri)
+    end
     local scheme               = ngx.var.scheme
 
     local jwt_validity         = conf['jwt_validity']
@@ -69,12 +72,19 @@ function plugin:access(conf)
     local ssl_verify           = conf['ssl_verify']
     local cb_scheme            = conf['callback_scheme'] or scheme
     local cb_server_name       = ngx.req.get_headers()["Host"]
+    if conf['strip_port_from_host'] then
+      cb_server_name = cb_server_name:match( "(.-):?%d*$" )
+    end
     local cb_url               = cb_scheme .. "://" .. cb_server_name .. cb_uri
-    local redirect_url         = cb_scheme .. "://" .. cb_server_name .. ngx.var.request_uri
+    local request_uri = ngx.var.request_uri
+    if conf['unescape_uri'] then
+      request_uri = ngx.unescape_uri(request_uri)
+    end
+    local redirect_url         = cb_scheme .. "://" .. cb_server_name .. request_uri
     local initial_redirect_url = cb_url .. "?uri=" .. uri
 
     local key, client_id, client_secret = nil, nil, nil
-    if private_keys[private_key_id] then
+    if private_keys and private_keys[private_key_id] then
         key = private_keys[private_key_id]
     elseif conf.private_keys[private_key_id] then
         key = ngx_b64.decode_base64url(conf.private_keys[private_key_id])
@@ -222,7 +232,11 @@ function plugin:access(conf)
             local m, err = ngx.re.match(uri_args["state"], "uri=(?<uri>.+)")
 
             if m then
-                return ngx.redirect(m["uri"])
+                if conf['unescape_uri'] then
+                    return ngx.redirect(ngx.unescape_uri(m["uri"]))
+                else
+                    return ngx.redirect(m["uri"])
+                end
             else
                 return ngx.exit(ngx.BAD_REQUEST)
             end
@@ -237,6 +251,6 @@ function plugin:access(conf)
 end
 
 plugin.PRIORITY = 1000
-plugin.VERSION = "0.0-5"
+plugin.VERSION = "0.0-6"
 
 return plugin

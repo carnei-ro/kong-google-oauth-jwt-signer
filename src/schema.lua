@@ -67,7 +67,18 @@ return {
                 values = {
                     type = "string",
                     required = true,
-                }
+                },
+                default = {}
+            } },
+            { unescape_uri = {
+                type = "boolean",
+                default = false,
+                required = true
+            } },
+            { strip_port_from_host = {
+                type = "boolean",
+                default = false,
+                required = true
             } },
         },
     },
